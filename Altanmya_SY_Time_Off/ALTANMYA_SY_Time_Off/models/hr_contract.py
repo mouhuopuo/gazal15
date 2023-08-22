@@ -12,6 +12,50 @@ class HrContract(models.Model):
     _inherit = 'hr.contract'
     _description = 'Employee Contract'
 
+    ## Edited by Ghazal
+    work_entry_source = fields.Selection([('calendar', 'Working Schedule')], required=True, default='calendar', help='''
+           Defines the source for work entries generation
+
+           Working Schedule: Work entries will be generated from the working hours below.
+           Attendances: Work entries will be generated from the employee's attendances. (requires Attendance app)
+           Planning: Work entries will be generated from the employee's planning. (requires Planning app)
+       '''
+                                         )
+
+    # Is used to add more values, for example planning_slot_id
+    def _get_more_vals_attendance_interval(self, interval):
+        return []
+
+    def has_static_work_entries(self):
+        # Static work entries as in the same are to be generated each month
+        # Useful to differentiate attendance based contracts from regular ones
+        self.ensure_one()
+        return self.work_entry_source == 'calendar'
+
+    def _get_leave_domain(self, start_dt, end_dt):
+        return [
+            ('time_type', '=', 'leave'),
+            ('calendar_id', 'in', [False] + self.resource_calendar_id.ids),
+            ('resource_id', 'in', [False] + self.employee_id.resource_id.ids),
+            ('date_from', '<=', end_dt),
+            ('date_to', '>=', start_dt),
+            ('company_id', 'in', [False, self.company_id.id]),
+        ]
+    def _get_attendance_intervals(self, start_dt, end_dt):
+        # {resource: intervals}
+        employees_by_calendar = defaultdict(lambda: self.env['hr.employee'])
+        for contract in self:
+            employees_by_calendar[contract.resource_calendar_id] |= contract.employee_id
+        result = dict()
+        for calendar, employees in employees_by_calendar.items():
+            result.update(calendar._attendance_intervals_batch(
+                start_dt,
+                end_dt,
+                resources=employees.resource_id,
+                tz=pytz.timezone(calendar.tz)
+            ))
+        return result
+    #####
     def _get_contract_work_entries_values(self, date_start, date_stop):
         start_dt = pytz.utc.localize(date_start) if not date_start.tzinfo else date_start
         end_dt = pytz.utc.localize(date_stop) if not date_stop.tzinfo else date_stop
