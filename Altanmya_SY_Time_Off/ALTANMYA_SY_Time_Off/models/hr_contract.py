@@ -1,4 +1,4 @@
-import itertools
+'''import itertools
 import pytz
 from collections import defaultdict
 
@@ -416,3 +416,4 @@ class HrContract(models.Model):
     #                 ('contract_id', contract.id),
     #             ] + contract._get_more_vals_leave_interval(interval, leaves))]
     #     return contract_vals
+'''
