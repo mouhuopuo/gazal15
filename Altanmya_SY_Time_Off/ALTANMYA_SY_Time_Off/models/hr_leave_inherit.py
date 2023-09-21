@@ -14,7 +14,9 @@ class HRLeave(models.Model):
     _inherit = 'hr.leave'
 
     employee_total_leaves = fields.Integer(string='إجمالي الإجازات المرضية من بداية السنة',
-                                           compute='_compute_employee_leaves', store=True)
+                                           store=True)
+     # employee_total_leaves = fields.Integer(string='إجمالي الإجازات المرضية من بداية السنة',
+     #                                       compute='_compute_employee_leaves', store=True)
 
 
     @api.onchange('employee_ids')
